@@ -1,4 +1,4 @@
 #pragma once
 
 
-bool LineSensor(int pin);
+bool lineDetector(int pin);
