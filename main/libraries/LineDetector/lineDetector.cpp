@@ -8,20 +8,11 @@ void lineDetector::lineDetectorInit{
 }
 
 void lineDetector::lineDetected(){
-    if(detected()){
-        
-        Motors.Turn(DEGREE_180, direction);
-        direction = !direction;
-
-    }
-}
-
-bool_t lineDetector::detected(){
-    if(digitalRead(LINE_DETECTION_ECHO_PIN)){
-        return true;
-    }
-    return false;
     
+        
+    Motors.Turn(DEGREE_180, direction);
+    direction = !direction;
+
 }
 
 
