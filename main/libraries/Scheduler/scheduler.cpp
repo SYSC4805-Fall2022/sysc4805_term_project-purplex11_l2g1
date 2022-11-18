@@ -3,6 +3,8 @@
 
 TimerScheduler Scheduler;
 
+void watchdogSetup(void) {}
+
 int16_t  TimerMs[MAX_TIMERS]
 {
 #ifdef TIMER0_ENABLE
@@ -106,6 +108,7 @@ void Handler::Run()
     timerTicks++;
     if (timerTicks >= waitTimerTicks)
     {
+        watchdogReset();
         isr();
         timerTicks=0;
     }
@@ -121,6 +124,7 @@ void Handler::Start(void (*setISR)(), uint16_t setWaitTimerTicks, uint8_t setTim
 
 void TimerScheduler::SchedulerInit() 
 {
+    watchdogEnable(WATCHDOG_TIMER_MS);
 #ifdef TIMER0_ENABLE
     Timer0.attachInterrupt(Timer0ISR).start(TIMER0_MS*1000);
 #endif
