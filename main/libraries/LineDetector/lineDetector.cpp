@@ -1,15 +1,13 @@
-#include lineDectector.h
-
-Motor Motors;
+#include "lineDectector.h"
 
 
-void lineDetectorInit(){
+void lineDetector::lineDetectorInit{
      direction = TRUE;
 
      attachInterrupt(LINE_DETECTION_ECHO_PIN, lineDetector(), RISING);
 }
 
-void lineDetector(){
+void lineDetector::lineDetected(){
     if(detected()){
         
         Motors.Turn(DEGREE_180, direction);
@@ -18,7 +16,7 @@ void lineDetector(){
     }
 }
 
-bool_t detected(){
+bool_t lineDetector::detected(){
     if(digitalRead(LINE_DETECTION_ECHO_PIN)){
         return true;
     }
