@@ -31,7 +31,9 @@
 #define MOTOR_3_4_DIR_PIN           23
 #define MOTOR_ENCODER_RIGHT         0
 #define MOTOR_ENCODER_LEFT          0
-#define LINE_DETECTION_ECHO_PIN     0
+#define LINE_DETECTION_ECHO_PIN_MIDDLE     0
+#define LINE_DETECTION_ECHO_PIN_LEFT 0
+#define LINE_DETECTION_ECHO_PIN_RIGHT 0
 #define SONAR_ECHO_PIN              0
 #define SONAR_CTRL_PIN              0
 #define VL53L1X_1_ECHO_PIN          0
