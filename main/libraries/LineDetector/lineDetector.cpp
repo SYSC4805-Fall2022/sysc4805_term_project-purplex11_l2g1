@@ -1,16 +1,16 @@
-#include "lineDectector.h"
+#include "lineDetector.h"
 
-
-void lineDetector::lineDetectorInit{
+lineDetector lineD;
+void lineDetector::lineDetectorInit(){
      direction = TRUE;
      linedetected_LEFT = FALSE;
      linedetected_RIGHT = FALSE;
      linedetected_MIDDLE = FALSE;
      linedetectionState = FALSE;
 
-     attachInterrupt(LINE_DETECTION_ECHO_PIN_LEFT, lineDetected, RISING); //they would all call the same function
-     attachInterrupt(LINE_DETECTION_ECHO_PIN_RIGHT, lineDetected_RIGHT, RISING);
-     attachInterrupt(LINE_DETECTION_ECHO_PIN_FRONT, lineDetected_MIDDLE, RISING);
+     //attachInterrupt(LINE_DETECTION_ECHO_PIN_LEFT, lineDetected_LEFT(), RISING); //they would all call the same function
+     //attachInterrupt(LINE_DETECTION_ECHO_PIN_RIGHT, lineDetected_RIGHT(), RISING);
+     //attachInterrupt(LINE_DETECTION_ECHO_PIN_FRONT, lineDetected_MIDDLE(), RISING);
 }
 
 void lineDetector::lineDetected_LEFT(){
@@ -32,37 +32,37 @@ void lineDetector::lineDetected_MIDDLE(){
 
 void lineDectectorISR(){
 
-    if(linedetected_LEFT && linedetected_RIGHT && linedetected_MIDDLE){
-        Motors.Turn(DEGREE_180, direction);
-        direction = !direction;
-        lineDetector.linedetected_LEFT = FALSE;
-        lineDetector.linedetected_RIGHT = FALSE;
-        lineDetector.linedetected_MIDDLE = FALSE;
-        lineDetector.linedetectionState = TRUE;
-    }else if (linedetected_RIGHT && linedetected_MIDDLE){
+    if(lineD.linedetected_LEFT && lineD.linedetected_RIGHT && lineD.linedetected_MIDDLE){
+        Motors.Turn(DEGREE_180, lineD.direction);
+        //lineD.direction = !lineD.direction;
+        lineD.linedetected_LEFT = FALSE;
+        lineD.linedetected_RIGHT = FALSE;
+        lineD.linedetected_MIDDLE = FALSE;
+        lineD.linedetectionState = TRUE;
+    }else if (lineD.linedetected_RIGHT && lineD.linedetected_MIDDLE){
         Motors.Turn(DEGREE_45, FALSE);
-        lineDetector.linedetected_RIGHT = FALSE;
-        lineDetector.linedetected_MIDDLE = FALSE;
-        lineDetector.linedetectionState = TRUE;
-    }else if (linedetected_LEFT && linedetected_MIDDLE){
+        lineD.linedetected_RIGHT = FALSE;
+        lineD.linedetected_MIDDLE = FALSE;
+        lineD.linedetectionState = TRUE;
+    }else if (lineD.linedetected_LEFT && lineD.linedetected_MIDDLE){
         Motors.Turn(DEGREE_45, TRUE);
-        lineDetector.linedetected_LEFT = FALSE;
-        lineDetector.linedetected_MIDDLE = FALSE;
-        lineDetector.linedetectionState = TRUE;
-    }else if (linedetected_RIGHT){
+        lineD.linedetected_LEFT = FALSE;
+        lineD.linedetected_MIDDLE = FALSE;
+        lineD.linedetectionState = TRUE;
+    }else if (lineD.linedetected_RIGHT){
         Motors.Turn(DEGREE_5, FALSE);
-        lineDetector.linedetected_RIGHT = FALSE;
-        lineDetector.linedetectionState = TRUE;
-    }else if(linedetected_LEFT){
+        lineD.linedetected_RIGHT = FALSE;
+        lineD.linedetectionState = TRUE;
+    }else if(lineD.linedetected_LEFT){
         Motors.Turn(DEGREE_5, TRUE);
-        lineDetector.linedetected_LEFT = FALSE;
-        lineDetector.linedetectionState = TRUE;
+        lineD.linedetected_LEFT = FALSE;
+        lineD.linedetectionState = TRUE;
     }
 
-    if(lineDetector.linedetectionState){
+    if(lineD.linedetectionState){
         if(Motors.isTurning){
-            Motors.moveForward();
-            lineDetector.linedetectionState = FALSE;
+            Motors.MoveForward();
+            lineD.linedetectionState = FALSE;
         }
     }
 }
