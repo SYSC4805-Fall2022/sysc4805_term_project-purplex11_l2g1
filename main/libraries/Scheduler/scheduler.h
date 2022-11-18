@@ -11,9 +11,10 @@
 #include <DueTimer.h>
 #include <cmath>
 
-#define MAX_HANDLERS_PER_TIMER      10
+#define MAX_HANDLERS_PER_TIMER      5
 
 #define MAX_TIMERS                  9
+#define WATCHDOG_TIMER_MS           10
 
 #define TIMER0_RESERVED
 #define TIMER1_RESERVED
