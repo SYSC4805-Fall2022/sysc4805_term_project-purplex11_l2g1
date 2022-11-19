@@ -1,3 +1,8 @@
+/****************************************************************************************
+ * Filename: pathFindingTimingTest.ino
+ * Author: Justin Whalley
+ * Description: File to run the path finding module and print the time required to analyze
+****************************************************************************************/
 #include "pathFinding.h"
 #include <string.h>
 

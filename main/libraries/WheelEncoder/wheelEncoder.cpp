@@ -1,3 +1,8 @@
+/****************************************************************************************
+ * Filename: wheelEncoder.cpp
+ * Author: Justin Whalley
+ * Description: File to contain the wheel encoder functionality
+****************************************************************************************/
 #include "wheelEncoder.h"
 
 WheelEncoders encoders;

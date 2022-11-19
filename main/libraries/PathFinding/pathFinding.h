@@ -1,3 +1,9 @@
+/****************************************************************************************
+ * Filename: pathFinding.h
+ * Author: Justin Whalley
+ * Description: Header file to contain structs and function declarations for the path 
+ *              finding module
+****************************************************************************************/
 #ifndef PATH_FINDING_H
 #define PATH_FINDING_H
 

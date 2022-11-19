@@ -1,5 +1,8 @@
-
-
+/****************************************************************************************
+ * Filename: motor.cpp
+ * Author: Justin Whalley
+ * Description: File to contain the motor functionality
+****************************************************************************************/
 
 #include "motor.h"
 

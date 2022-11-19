@@ -1,3 +1,8 @@
+"""
+ * Filename: pathFindingTestMain.py
+ * Author: Justin Whalley
+ * Description: Script to run the path finding algorithm and show the result visually
+"""
 import pygame
 import pygame_menu
 from functools import partial

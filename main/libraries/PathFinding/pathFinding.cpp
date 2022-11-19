@@ -1,4 +1,8 @@
-
+/****************************************************************************************
+ * Filename: pathFinding.cpp
+ * Author: Justin Whalley
+ * Description: File to contain the path finding functionality
+****************************************************************************************/
 #include <string.h>
 #include "pathfinding.h"
 

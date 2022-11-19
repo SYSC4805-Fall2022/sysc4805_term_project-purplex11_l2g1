@@ -1,3 +1,8 @@
+/****************************************************************************************
+ * Filename: pathFindingTest.cpp
+ * Author: Justin Whalley
+ * Description: Helper file to utilize the path finding module and print the result 
+****************************************************************************************/
 #include <cstdint>
 #include <iostream>
 #include <stdio.h>

@@ -1,3 +1,9 @@
+/****************************************************************************************
+ * Filename: motor.ino
+ * Author: Justin Whalley
+ * Description: File to test motor module functionality
+****************************************************************************************/
+
 #include "startUp.h"
 
 int State = 0;

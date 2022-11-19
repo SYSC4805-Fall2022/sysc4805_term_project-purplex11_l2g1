@@ -1,3 +1,9 @@
+/****************************************************************************************
+ * Filename: scheduler.cpp
+ * Author: Justin Whalley
+ * Description: File to contain the scheduler functionality. Scheduler is intended to 
+ *              wrap around the DueTimer library to avoid timer interrupt conflict.
+****************************************************************************************/
 #include "scheduler.h"
 
 
