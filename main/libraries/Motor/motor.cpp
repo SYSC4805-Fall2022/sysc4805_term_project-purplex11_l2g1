@@ -1,155 +1,168 @@
-/****************************************************************************************
- * Filename: motor.cpp
- * Author: Justin Whalley
- * Description: File to contain the motor functionality
-****************************************************************************************/
-
 #include "motor.h"
 
-Motor Motors;
+Motors Vehicle;
 
-void Motor::_SetDir(bool_t forward){
-    /* Set motor direction pins to match parameter*/
-    if (forward)
-    {
-        digitalWrite(MOTOR_1_2_DIR_PIN, FORWARD_MOTOR_PIN_STATE);
-        digitalWrite(MOTOR_3_4_DIR_PIN, FORWARD_MOTOR_PIN_STATE);
+void Motors::motorInit() {
+    state = STOPPED;
+
+    pinMode(LEFT_MOTOR_DIR_PIN, OUTPUT);
+    pinMode(RIGHT_MOTOR_DIR_PIN, OUTPUT);
+
+    digitalWrite(LEFT_MOTOR_DIR_PIN, LEFT_MOTOR_FORWARD_PIN_STATE);
+    digitalWrite(RIGHT_MOTOR_DIR_PIN, RIGHT_MOTOR_FORWARD_PIN_STATE);
+
+    PMC->PMC_PCER0 |= PMC_PCER0_PID27;
+    PIOB->PIO_PDR |= PIO_PDR_P25; 
+    PIOB->PIO_ABSR |= PIO_PB25B_TIOA0;
+    TC0->TC_CHANNEL[0].TC_CMR = TC_CMR_TCCLKS_TIMER_CLOCK1 
+                                | TC_CMR_WAVE 
+                                | TC_CMR_WAVSEL_UP_RC 
+                                | TC_CMR_ACPA_CLEAR 
+                                | TC_CMR_ACPC_SET; 
+    TC0->TC_CHANNEL[0].TC_RC = ( 42000000 / 100) -1; 
+    TC0->TC_CHANNEL[0].TC_RA = (42000000 / 100) * 0.25; 
+    TC0->TC_CHANNEL[0].TC_CCR = TC_CCR_SWTRG 
+                                | TC_CCR_CLKEN;
+                                
+    PMC->PMC_PCER1 |= PMC_PCER1_PID36; // Enable Clock to PWM module
+    PIOC->PIO_ABSR |= PIO_PC3B_PWMH0; // Assign C3 to PWM module (Periph_B)
+    PIOC->PIO_PDR |= PIO_PDR_P3; // Release C3 from the PIO module
+    REG_PWM_CLK = PWM_CLK_PREA(0) | PWM_CLK_DIVA(84);//Set PWM clock 1MHz (Mck/84)
+    PWM->PWM_CH_NUM[0].PWM_CMR |= PWM_CMR_CPRE_CLKA // Set the clock source as CLKA
+    | PWM_CMR_CPOL; //Set output polarity be high.
+    PWM->PWM_CH_NUM[0].PWM_CPRD = ( 1000000 / 100) -1; 
+    PWM->PWM_CH_NUM[0].PWM_CDTY = ( 1000000 / 100)* 0.25; // Set PWM duty cycle
+    PWM->PWM_ENA = PWM_ENA_CHID0; // Enable the PWM channel
+
+    stop();
+}
+
+void Motors::stop() {
+    if (rightMotorState != STOPPED) {
+        PWM->PWM_CH_NUM[0].PWM_CDTY = PWM_STOP;
     }
-    else
-    {
-        digitalWrite(MOTOR_1_2_DIR_PIN, REVERSE_MOTOR_PIN_STATE);
-        digitalWrite(MOTOR_3_4_DIR_PIN, REVERSE_MOTOR_PIN_STATE);
+
+    if (leftMotorState != STOPPED) {
+        TC0->TC_CHANNEL[0].TC_RA = TC_STOP;
     }
+
+    leftMotorState = MOTOR_STOPPED;
+    rightMotorState = MOTOR_STOPPED;
+    state = STOPPED;
 }
 
-void Motor::Stop(){
-    /* Stop all motors immediately */
-    TC0->TC_CHANNEL[0].TC_RA = (42000000 / MOTOR_FREQUENCY) * 0.01; 
-    PWM->PWM_CH_NUM[0].PWM_CDTY = ( 1000000 / MOTOR_FREQUENCY)* 0.01; 
-    Motors.isTurning = FALSE;
+
+State_t Motors::getState() {
+    return state;
 }
 
-void Motor::MotorInit()
-{
-    Motors.isTurning = FALSE;
-    Motors.turnDegrees = DEGREE_0;
-    Motors.turnRight = FALSE;
 
-    Scheduler.AddHandler(MotorISR, MOTOR_ISR_TIME_MS);
-}
-
-void Motor::MoveForwardLeft(){
-    _SetDir(TRUE);
-     TC0->TC_CHANNEL[0].TC_RA = (42000000 / MOTOR_FREQUENCY) * 0.25; 
-}
-
-void Motor::MoveForwardRight(){
-    _SetDir(TRUE);
-    PWM->PWM_CH_NUM[0].PWM_CDTY = ( 1000000 / MOTOR_FREQUENCY)*0.25;
-}
-
-void Motor::MoveReverseLeft(){
-    _SetDir(FALSE);
-     TC0->TC_CHANNEL[0].TC_RA = (42000000 / MOTOR_FREQUENCY) * 0.25; 
-}
-
-void Motor::MoveReverseRight(){
-    _SetDir(FALSE);
-    PWM->PWM_CH_NUM[0].PWM_CDTY = ( 1000000 / MOTOR_FREQUENCY)*0.25;
-}
-
-void Motor::MoveForward()
-{
-    MoveForwardLeft();
-    MoveForwardRight();
-}
-
-void Motor::MoveReverse()
-{
-    MoveReverseLeft();
-    MoveReverseRight();
-}
-
-int8_t Motor::GetSpeedRight()
-{
-    /* Return the greatest speed from left or right motors */
-    if (ABS(GetSpeedLeft()) > ABS(GetSpeedRight()))
-    {
-        return GetSpeedLeft();
-    }
-    else
-    {
-        return GetSpeedRight();
-    }
-}
-
-int8_t Motor::GetSpeedLeft()
-{
-    /* Return the encoder measured speed for left wheels */
-    return encoders.GetMeasuredSpeedLeft();
-}
-
-int8_t Motor::GetSpeed()
-{
-    /* Return the encoder measured speed for right wheels */
-    return encoders.GetMeasuredSpeedRight();
-}
-
-void Motor::Turn(TurnAngle_t degrees, bool_t right){
-    Stop();
-
-    if (degrees != DEGREE_0)
-    {
-        /* Initialize variables to begin turning */
-        turnRight = right;
-        turnDegrees = degrees;
-        isTurning = TRUE;
-    }
-    else
-    {
-        /* Stop turning if DEGREE_0 is inputted */
-        isTurning = FALSE;
-    }
-}
-
-void MotorISR()
-{
-    /* Check if the motor is turning */
-    if (Motors.isTurning)
-    {
-        /* If stopped, begin the turning procedure */
-        if (Motors.GetSpeed() == 0)
-        {
-            /* Set the left or right motors to move depending on turn direction */
-            if (Motors.turnRight)
-            {
-                Motors.MoveForwardLeft();
-            }
-            else
-            {
-                Motors.MoveForwardRight();
-            }
-            encoders.EncoderReset();
-        }
-        else
-        {
-            /* Check if turn complete. If complete, stop vehicle and clear isTurning flag */
-            if (Motors.turnRight)
-            {
-                if (encoders.GetEncoderCountLeft() > Motors.turnDegrees)
-                {
-                    Motors.isTurning = FALSE;
-                    Motors.Stop();
-                }
-            }
-            else
-            {
-                if (encoders.GetEncoderCountRight() > Motors.turnDegrees)
-                {
-                    Motors.isTurning = FALSE;
-                    Motors.Stop();
-                }
-            }
+void Motors::moveForwardLeft() {
+    if (leftMotorState != MOTOR_FORWARD) {
+        digitalWrite(LEFT_MOTOR_DIR_PIN, LEFT_MOTOR_FORWARD_PIN_STATE);
+        TC0->TC_CHANNEL[0].TC_RA = TC_DUTY_MOVING;
+        leftMotorState = MOTOR_FORWARD;
+        if (rightMotorState == MOTOR_FORWARD) {
+            state = FORWARD;
         }
     }
+
+    
+}
+
+
+void Motors::moveForwardRight() {
+    if (rightMotorState != MOTOR_FORWARD) {
+        digitalWrite(RIGHT_MOTOR_DIR_PIN, RIGHT_MOTOR_FORWARD_PIN_STATE);
+        PWM->PWM_CH_NUM[0].PWM_CDTY = PWM_DUTY_MOVING;
+        rightMotorState = MOTOR_FORWARD;
+        if (leftMotorState == MOTOR_FORWARD) {
+            state = FORWARD;
+        }
+    }
+}
+
+
+void Motors::moveForward() {
+    moveForwardLeft();
+    moveForwardRight();
+}
+
+
+void Motors::moveReverseLeft() {
+    if (leftMotorState != MOTOR_REVERSE) {
+        digitalWrite(LEFT_MOTOR_DIR_PIN, LEFT_MOTOR_REVERSE_PIN_STATE);
+        TC0->TC_CHANNEL[0].TC_RA = TC_DUTY_MOVING;
+        leftMotorState = MOTOR_REVERSE;
+        if (rightMotorState == MOTOR_REVERSE) {
+            state = REVERSE;
+        }
+    }
+}
+
+
+void Motors::moveReverseRight() {
+    if (rightMotorState != MOTOR_REVERSE) {
+        digitalWrite(RIGHT_MOTOR_DIR_PIN, RIGHT_MOTOR_REVERSE_PIN_STATE);
+        PWM->PWM_CH_NUM[0].PWM_CDTY = PWM_DUTY_MOVING;
+        rightMotorState = MOTOR_REVERSE;
+        if (leftMotorState == MOTOR_REVERSE) {
+            state = REVERSE;
+        }
+    }
+}
+
+
+void Motors::moveReverse() {
+    moveReverseLeft();
+    moveReverseRight();
+}
+ 
+
+void Motors::turn45(bool left) {
+    if (left) {
+        moveForwardRight();
+        moveReverseLeft();
+    } else {
+        moveReverseRight();
+        moveForwardLeft();
+    }
+    state = TURNING;
+    Timer4.attachInterrupt(TurnISR).start(TURN_45_TIME_MS*1000);
+}
+
+
+void Motors::turn90(bool left) {
+    if (left) {
+        moveForwardRight();
+        moveReverseLeft();
+    } else {
+        moveReverseRight();
+        moveForwardLeft();
+    }
+    state = TURNING;
+    Timer4.attachInterrupt(TurnISR).start(TURN_90_TIME_MS*1000);
+}
+
+
+void Motors::turn180(bool left) {
+    state = TURNING;
+    if (left) {
+        moveForwardRight();
+        moveReverseLeft();
+    } else {
+        moveReverseRight();
+        moveForwardLeft();
+    }
+    state = TURNING;
+    Timer4.attachInterrupt(TurnISR).start(TURN_180_TIME_MS*1000); 
+}
+
+void Motors::CancelTurn() {
+    stop();
+    Timer4.stop();
+}
+
+void TurnISR() {
+    Vehicle.CancelTurn();
 }

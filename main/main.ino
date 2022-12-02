@@ -1,11 +1,12 @@
 #include <stdio.h>
-#include "startUp.h"
+#include "MainFsm.h"
 
 
 
 void setup() {
   // put your setup code here, to run once:
-  BootUp();
+  MainVehicleFsm.MainFsmInit();
+  MainVehicleFsm.MainFsmStart();
 }
 
 void loop() {
