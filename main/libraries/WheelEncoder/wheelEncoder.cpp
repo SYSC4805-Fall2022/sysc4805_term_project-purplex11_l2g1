@@ -1,147 +1,123 @@
-/****************************************************************************************
- * Filename: wheelEncoder.cpp
- * Author: Justin Whalley
- * Description: File to contain the wheel encoder functionality
-****************************************************************************************/
 #include "wheelEncoder.h"
 
 WheelEncoders encoders;
 
-void WheelEncoderOneSide::WheelEncoderOneSideInit(WheelEncoderSide_t side)
-{
-    if (side == LEFT)
-    {
-        PMC->PMC_PCER0 |= PMC_PCER0_PID28 | PMC_PCER0_PID29; // Timer Counter 0 channel 1 IS TC1, TC1 power ON
-        TC0->TC_CHANNEL[1].TC_CMR = TC_CMR_TCCLKS_TIMER_CLOCK1 // capture mode, MCK/2 = 42 MHz
-            | TC_CMR_ABETRG // TIOA is used as the external trigger
-            | TC_CMR_LDRA_RISING// load RA on rising edge of TIOA
-            | TC_CMR_ETRGEDG_RISING; // Trigger on rising edge
-        TC0->TC_CHANNEL[1].TC_CCR = TC_CCR_SWTRG | TC_CCR_CLKEN; // Reset TC counter and enable
-        TC0->TC_CHANNEL[1].TC_IER |= TC_IER_LDRAS;
-        NVIC_EnableIRQ(TC1_IRQn);
+void WheelEncoders::WheelEncoderInit(){
+    /* Attach encoder ISR to the Timer5 handler */
+    Timer5.attachInterrupt(WheelEncoderISR);
+
+    /* Initialize the timer counters for the encoders */
+    PMC->PMC_PCER0 |= PMC_PCER0_PID28 | PMC_PCER0_PID29; 
+    TC0->TC_CHANNEL[1].TC_CMR = TC_CMR_TCCLKS_TIMER_CLOCK1 
+        | TC_CMR_ABETRG 
+        | TC_CMR_LDRA_RISING
+        | TC_CMR_ETRGEDG_RISING; 
+    TC0->TC_CHANNEL[1].TC_CCR = TC_CCR_SWTRG | TC_CCR_CLKEN; 
+    TC0->TC_CHANNEL[1].TC_IER |= TC_IER_LDRAS;
+
+    TC2->TC_CHANNEL[0].TC_CMR = TC_CMR_TCCLKS_TIMER_CLOCK1 
+        | TC_CMR_ABETRG
+        | TC_CMR_LDRA_RISING
+        | TC_CMR_ETRGEDG_RISING; 
+    TC2->TC_CHANNEL[0].TC_CCR = TC_CCR_SWTRG | TC_CCR_CLKEN; 
+    TC2->TC_CHANNEL[0].TC_IER |= TC_IER_LDRBS;
+
+    /* Initialize all variables to 0 */
+    lastRecordedSpeedLeft = 0;
+    lastRecordedSpeedRight = 0;
+    accumulatedCountLeft = 0;
+    accumulatedCountRight = 0;
+    totalCountLeft = 0;
+    totalCountRight = 0;
+    encoderStartTime = 0;
+    encoderEndTime = 0;
+    lastInterruptTimeLeft = 0;
+    lastInterruptTimeRight = 0;
+    encoderAccumulationTime = 0;
+
+    /* Disable encoders on default */
+    Disable();
+}
+
+void WheelEncoders::Disable(){
+    /* Disable the encoders by disabling NVIC for all interrupts */
+    NVIC_DisableIRQ(TC1_IRQn);
+    NVIC_DisableIRQ(TC6_IRQn);
+    Timer5.stop();
+}
+
+void WheelEncoders::Enable(int16_t time_ms, int16_t accumulation_time_ms){
+    /* Limit time to be always greater than 0 */
+    if (time_ms <= 0) {
+        encoderEndTime = millis() + 300000; // set end time to 5 minutes
+    } else {
+        encoderEndTime = millis() + time_ms;
     }
-    else
-    {
-        TC2->TC_CHANNEL[0].TC_CMR = TC_CMR_TCCLKS_TIMER_CLOCK1 // capture mode, MCK/2 = 42 MHz
-            | TC_CMR_ABETRG // TIOA is used as the external trigger
-            | TC_CMR_LDRA_RISING// load RA on rising edge of TIOA
-            | TC_CMR_ETRGEDG_RISING; // Trigger on rising edge
-        TC2->TC_CHANNEL[0].TC_CCR = TC_CCR_SWTRG | TC_CCR_CLKEN; // Reset TC counter and enable
-        TC2->TC_CHANNEL[0].TC_IER |= TC_IER_LDRBS;
-        NVIC_EnableIRQ(TC6_IRQn);
+
+    /* Limit accumulation time to be greater than minimum accumulation time */
+    if (accumulation_time_ms < MIN_ACCUMULATION_TIME_MS) {
+        accumulation_time_ms = MIN_ACCUMULATION_TIME_MS;
+    }
+
+    /* Enable required NVIC controllers */
+    Timer5.start(accumulation_time_ms);
+    NVIC_EnableIRQ(TC1_IRQn);
+    NVIC_EnableIRQ(TC6_IRQn);
+}
+
+void WheelEncoders::Enable(){
+    /* Enable encoders for 5 minutes and min accumulation time  */
+    Enable(-1,0);
+}
+
+uint16_t WheelEncoders::GetSpeed(){
+    /* Return the max speed of both encoders */
+    return MAX(lastRecordedSpeedLeft, lastRecordedSpeedRight);
+}
+
+void WheelEncoders::ResetTotalCounts(){
+    /* Reset count sum to 0 */
+    totalCountLeft = 0;
+    totalCountRight = 0;
+}
+
+uint16_t WheelEncoders::GetTotalCount() {
+    /* Returns the sum of both encoders counts */
+    return (totalCountLeft + totalCountRight);
+}
+
+
+void WheelEncoderISR() {
+    /* Retrieve the speed from the accumulated count */
+    encoders.lastRecordedSpeedLeft = SPEED_FROM_COUNT(encoders.accumulatedCountLeft*1000, encoders.accumulation_time_ms); //Multiply count by 1000 rather than divide time 
+    encoders.lastRecordedSpeedRight = SPEED_FROM_COUNT(encoders.accumulatedCountRight*1000, encoders.accumulation_time_ms); // as whole numbers are easier to work with
+
+    /* Reset accumulated counts to 0 */
+    encoders.accumulatedCountLeft = 0;
+    encoders.accumulatedCountRight = 0;
+
+    /* If time passed time limit set in enable, disable the encoders */
+    if (millis() >= encoders.encoderEndTime) {
+        encoders.Disable();
     }
 }
-
-void WheelEncoderOneSide::EncoderReset()
-{
-    /* Update start time to current time and clear count and time */
-    startTime = millis();
-    count = 0;
-    accumulatedCount = 0;
-    time = 0;
-}
-
-void WheelEncoders::WheelEncodersInit()
-{
-    LeftWheelEncoder.WheelEncoderOneSideInit(LEFT);
-    RightWheelEncoder.WheelEncoderOneSideInit(RIGHT);
-     
-
-    /* Set the start time for encoder calculations to current time*/
-    LeftWheelEncoder.startTime = millis();
-    RightWheelEncoder.startTime = millis();   
-
-    Scheduler.AddHandler(EncoderISR, ACCUMULATION_TIME_MS);
-}
-
-void WheelEncoders::EncoderReset()
-{
-    /* Reset both left and right encoders*/
-    EncoderResetLeft();
-    EncoderResetRight();
-}
-
-void WheelEncoders::EncoderResetLeft()
-{
-    /* Update start time to current time and clear count and time */
-    LeftWheelEncoder.EncoderReset();
-}
-
-void WheelEncoders::EncoderResetRight()
-{
-    /* Update start time to current time and clear count and time */
-    RightWheelEncoder.EncoderReset();
-}
-
-uint16_t WheelEncoders::GetEncoderCountLeft()
-{
-    return LeftWheelEncoder.accumulatedCount;
-}
-
-uint16_t WheelEncoders::GetEncoderCountRight()
-{
-    return RightWheelEncoder.accumulatedCount;
-}
-
-uint32_t WheelEncoders::GetEncoderTimeLeft()
-{
-    return LeftWheelEncoder.time;
-}
-
-uint32_t WheelEncoders::GetEncoderTimeRight()
-{
-    return RightWheelEncoder.time;
-}
-
-uint8_t WheelEncoders::GetMeasuredSpeedLeft()
-{
-    return LeftWheelEncoder.speed;
-}
-
-uint8_t WheelEncoders::GetMeasuredSpeedRight()
-{
-    return RightWheelEncoder.speed;
-}
-
-void EncoderISR()
-{
-    /* Update time period for count*/
-    encoders.LeftWheelEncoder.time = millis() - encoders.LeftWheelEncoder.startTime;
-    encoders.RightWheelEncoder.time = millis() - encoders.RightWheelEncoder.startTime;
-
-    /* Cache time and count */
-    encoders.LeftWheelEncoder.cachedTime = encoders.LeftWheelEncoder.time;
-    encoders.RightWheelEncoder.cachedTime = encoders.RightWheelEncoder.time;
-
-    encoders.RightWheelEncoder.cachedCount = encoders.RightWheelEncoder.cachedCount;
-    encoders.LeftWheelEncoder.cachedCount = encoders.LeftWheelEncoder.cachedCount;
-
-    /* Calculate and store speed */
-    encoders.RightWheelEncoder.speed = SPEED_FROM_COUNT(encoders.RightWheelEncoder.count, encoders.RightWheelEncoder.time);
-    encoders.LeftWheelEncoder.speed = SPEED_FROM_COUNT(encoders.LeftWheelEncoder.count, encoders.LeftWheelEncoder.time);
-
-    /* Reset encoders to begin next iteration*/
-    encoders.RightWheelEncoder.EncoderReset();
-    encoders.LeftWheelEncoder.EncoderReset();
-}
-
 
 void TC1_Handler() {
-    uint32_t status = TC0->TC_CHANNEL[1].TC_SR; //Read status register, Clear status
-    if ((status & TC_SR_LDRAS) && (millis() - encoders.LeftWheelEncoder.lastInterruptTime > DEBOUNCING_TIME)) { // If ISR is fired by LDRAS then ....
-        encoders.LeftWheelEncoder.accumulatedCount++;
-        encoders.LeftWheelEncoder.count++;
-        encoders.LeftWheelEncoder.time = millis() - encoders.LeftWheelEncoder.startTime;
-        encoders.LeftWheelEncoder.lastInterruptTime = millis();
+    /* Increment count on every interrupt if time is greater than debouncing time */
+    uint32_t status = TC0->TC_CHANNEL[1].TC_SR;
+    if ((status & TC_SR_LDRAS) && (millis() - encoders.lastInterruptTimeLeft > DEBOUNCING_TIME)) { 
+        encoders.accumulatedCountLeft++;
+        encoders.totalCountLeft++;
+        encoders.lastInterruptTimeLeft = millis();
     }
 }
 
 void TC6_Handler() {
-    uint32_t status = TC2->TC_CHANNEL[0].TC_SR; //Read status register, Clear status
-    if ((status & TC_SR_LDRAS) && (millis() - encoders.RightWheelEncoder.lastInterruptTime > DEBOUNCING_TIME)) { // If ISR is fired by LDRAS then ....
-        encoders.RightWheelEncoder.accumulatedCount++;
-        encoders.RightWheelEncoder.count++;
-        encoders.RightWheelEncoder.time = millis() - encoders.RightWheelEncoder.startTime;
-        encoders.RightWheelEncoder.lastInterruptTime = millis();
+    /* Increment count on every interrupt if time is greater than debouncing time */
+    uint32_t status = TC2->TC_CHANNEL[0].TC_SR;
+    if ((status & TC_SR_LDRAS) && (millis() - encoders.lastInterruptTimeRight > DEBOUNCING_TIME)) { 
+        encoders.accumulatedCountRight++;
+        encoders.totalCountRight++;
+        encoders.lastInterruptTimeRight = millis();
     }
 }

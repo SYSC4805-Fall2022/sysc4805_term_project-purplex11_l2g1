@@ -7,12 +7,12 @@
   Released into the public domain.
 */
 
-#include "Arduino.h"
-
-#if defined(_SAM3XA_)
+#ifdef __arm__
 
 #ifndef DueTimer_h
 #define DueTimer_h
+
+#include "Arduino.h"
 
 #include <inttypes.h>
 
@@ -31,11 +31,7 @@
 #endif
 
 
-#if defined TC2
 #define NUM_TIMERS  9
-#else
-#define NUM_TIMERS  6
-#endif
 
 class DueTimer
 {
@@ -53,16 +49,14 @@ protected:
 
   // Make Interrupt handlers friends, so they can use callbacks
   friend void TC0_Handler(void);
-  //friend void TC1_Handler(void);
+  friend void TC1_Handler(void);
   friend void TC2_Handler(void);
   friend void TC3_Handler(void);
   friend void TC4_Handler(void);
   friend void TC5_Handler(void);
-#if NUM_TIMERS > 6
-  //friend void TC6_Handler(void);
+  friend void TC6_Handler(void);
   friend void TC7_Handler(void);
   friend void TC8_Handler(void);
-#endif
 
 	static void (*callbacks[NUM_TIMERS])();
 
@@ -83,18 +77,13 @@ public:
 	DueTimer(unsigned short _timer);
 	DueTimer& attachInterrupt(void (*isr)());
 	DueTimer& detachInterrupt(void);
-	DueTimer& start(double microseconds = -1);
+	DueTimer& start(long microseconds = -1);
 	DueTimer& stop(void);
 	DueTimer& setFrequency(double frequency);
-	DueTimer& setPeriod(double microseconds);
+	DueTimer& setPeriod(unsigned long microseconds);
 
 	double getFrequency(void) const;
-	double getPeriod(void) const;
-
-  inline __attribute__((always_inline)) bool operator== (const DueTimer& rhs) const
-    {return timer == rhs.timer; };
-  inline __attribute__((always_inline)) bool operator!= (const DueTimer& rhs) const
-    {return timer != rhs.timer; };
+	long getPeriod(void) const;
 };
 
 // Just to call Timer.getAvailable instead of Timer::getAvailable() :
@@ -109,11 +98,9 @@ extern DueTimer Timer1;
 	extern DueTimer Timer4;
 	extern DueTimer Timer5;
 #endif
-#if NUM_TIMERS > 6
 extern DueTimer Timer6;
 extern DueTimer Timer7;
 extern DueTimer Timer8;
-#endif
 
 #endif
 

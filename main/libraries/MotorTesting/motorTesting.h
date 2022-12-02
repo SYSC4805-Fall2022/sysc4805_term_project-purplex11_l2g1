@@ -1,15 +1,15 @@
-#ifndef MOTOR_H
-#define MOTOR_H
+#ifndef MOTOR_TESTING_H
+#define MOTOR_TESTING_H
 
 #include <stdint.h>
 #include "arduino.h"
 #include <DueTimer.h>
 #include "wheelEncoder.h"
 
-#define LEFT_MOTOR_FORWARD_PIN_STATE    LOW
-#define RIGHT_MOTOR_FORWARD_PIN_STATE   HIGH
-#define LEFT_MOTOR_REVERSE_PIN_STATE    HIGH
-#define RIGHT_MOTOR_REVERSE_PIN_STATE   LOW
+#define LEFT_MOTOR_FORWARD_PIN_STATE    0
+#define RIGHT_MOTOR_FORWARD_PIN_STATE   1
+#define LEFT_MOTOR_REVERSE_PIN_STATE    1
+#define RIGHT_MOTOR_REVERSE_PIN_STATE   0
 
 #define LEFT_MOTOR_DIR_PIN              22
 #define RIGHT_MOTOR_DIR_PIN             23
