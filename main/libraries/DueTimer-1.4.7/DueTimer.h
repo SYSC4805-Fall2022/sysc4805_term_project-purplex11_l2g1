@@ -15,7 +15,6 @@
 #define DueTimer_h
 
 #include <inttypes.h>
-#include "scheduler.h"
 
 /*
 	This fixes compatibility for Arduono Servo Library.
@@ -53,37 +52,19 @@ protected:
 	static uint8_t bestClock(double frequency, uint32_t& retRC);
 
   // Make Interrupt handlers friends, so they can use callbacks
-#ifndef TIMER0_RESERVED
   friend void TC0_Handler(void);
-#endif
-#ifndef TIMER1_RESERVED
   friend void TC1_Handler(void);
-#endif
-#ifndef TIMER2_RESERVED
   friend void TC2_Handler(void);
-#endif
-#ifndef TIMER3_RESERVED
   friend void TC3_Handler(void);
-#endif
-#ifndef TIMER4_RESERVED
   friend void TC4_Handler(void);
-#endif
-#ifndef TIMER5_RESERVED
   friend void TC5_Handler(void);
-#endif
 #if NUM_TIMERS > 6
-#ifndef TIMER6_RESERVED
   friend void TC6_Handler(void);
-#endif
-#ifndef TIMER7_RESERVED
   friend void TC7_Handler(void);
-#endif
-#ifndef TIMER0_RESERVED
   friend void TC8_Handler(void);
 #endif
-#endif
 
-	
+	static void (*callbacks[NUM_TIMERS])();
 
 	struct Timer
 	{
@@ -96,7 +77,6 @@ protected:
 	static const Timer Timers[NUM_TIMERS];
 
 public:
-	static void (*callbacks[NUM_TIMERS])();
 
 	static DueTimer getAvailable(void);
 
@@ -120,37 +100,19 @@ public:
 // Just to call Timer.getAvailable instead of Timer::getAvailable() :
 extern DueTimer Timer;
 
-#ifndef TIMER1_RESERVED
 extern DueTimer Timer1;
-#endif
 // Fix for compatibility with Servo library
 #ifndef USING_SERVO_LIB
-#ifndef TIMER0_RESERVED
 	extern DueTimer Timer0;
-#endif
-#ifndef TIMER2_RESERVED
 	extern DueTimer Timer2;
-#endif
-#ifndef TIMER3_RESERVED
 	extern DueTimer Timer3;
-#endif
-#ifndef TIMER4_RESERVED
 	extern DueTimer Timer4;
-#endif
-#ifndef TIMER5_RESERVED
 	extern DueTimer Timer5;
 #endif
-#endif
 #if NUM_TIMERS > 6
-#ifndef TIMER6_RESERVED
 extern DueTimer Timer6;
-#endif
-#ifndef TIMER7_RESERVED
 extern DueTimer Timer7;
-#endif
-#ifndef TIMER8_RESERVED
 extern DueTimer Timer8;
-#endif
 #endif
 
 #endif

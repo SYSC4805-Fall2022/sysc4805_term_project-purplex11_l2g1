@@ -1,146 +1,83 @@
-/****************************************************************************************
- * Filename: motor.h
- * Author: Justin Whalley
- * Description: Header file to contain structs and function declarations for motor module
-****************************************************************************************/
-
 #ifndef MOTOR_H
 #define MOTOR_H
 
-#include "common.h"
-#include "wheelEncoder.h"
+#include <stdint.h>
+#include "arduino.h"
+#include <DueTimer.h>
 
+#define LEFT_MOTOR_FORWARD_PIN_STATE    0
+#define RIGHT_MOTOR_FORWARD_PIN_STATE   1
+#define LEFT_MOTOR_REVERSE_PIN_STATE    1
+#define RIGHT_MOTOR_REVERSE_PIN_STATE   0
 
-/****************************************************************************************
- * Definitions
-****************************************************************************************/
+#define LEFT_MOTOR_DIR_PIN              22
+#define RIGHT_MOTOR_DIR_PIN             23
 
-#define MOTOR_ISR_TIME_MS       50
-#define FORWARD_MOTOR_PIN_STATE 1
-#define REVERSE_MOTOR_PIN_STATE 0
+#define PWM_DUTY_MOVING                 2500
+#define TC_DUTY_MOVING                  105000
+#define PWM_STOP                        1
+#define TC_STOP                         1                     
 
-/****************************************************************************************
- * Enums
-****************************************************************************************/
+#define TURN_45_TIME_MS                 3000
+#define TURN_90_TIME_MS                 6000
+#define TURN_180_TIME_MS                12000
+
+/*
+LEFT_MOTOR_EN       2
+RIGHT_MOTOR_EN      35
+*/
 
 typedef enum {
-    DEGREE_0   = 0,
-    DEGREE_5   = 1,
-    DEGREE_25  = 5,
-    DEGREE_45  = 9,
-    DEGREE_90  = 18,
-    DEGREE_180 = 36,
-} TurnAngle_t;
+    STOPPED = 0,
+    FORWARD = 1,
+    REVERSE = 2,
+    TURNING = 3
+} State_t;
 
-/****************************************************************************************
- * Structs
-****************************************************************************************/
+typedef enum {
+    MOTOR_STOPPED = 0,
+    MOTOR_FORWARD = 1,
+    MOTOR_REVERSE = 2
+} MotorState_t;
 
-class Motor
-{
+class Motors {
 public:
-    bool_t          isTurning;
-    TurnAngle_t     turnDegrees;
-    bool_t          turnRight;
+    State_t state;
+    MotorState_t leftMotorState;
+    MotorState_t rightMotorState;
 
-    friend void digitalWrite(uint32_t ulPin, uint32_t ulVal);
+    friend void digitalWrite(uint32_t uPin, uint32_t uVal);
+    friend void pinMode(uint32_t ulPin, uint32_t ulMode);
 
-    /****************************************************************************************
-     * void _SetDir()
-     * 
-     * Function to change the direction pins to match parameter.
-    ****************************************************************************************/
-    void _SetDir(bool_t forward);
+    void motorInit();
 
-    /****************************************************************************************
-     * void HardStop()
-     * 
-     * Function to immediately stop the vehicle.
-    ****************************************************************************************/
-    void Stop();
+    void stop();
 
-    /****************************************************************************************
-     * void MoveForwardLeft()
-     * 
-     * Sets the left wheels to move forward.
-    ****************************************************************************************/
-    void MoveForwardLeft();
+    State_t getState();
 
-    /****************************************************************************************
-     * void MoveForwardRight()
-     * 
-     * Sets the Right wheels to move forward.
-    ****************************************************************************************/
-    void MoveForwardRight();
+    void moveForwardLeft();
 
-    /****************************************************************************************
-     * void MoveReverseLeft()
-     * 
-     * Sets the left wheels to reverse.
-    ****************************************************************************************/
-    void MoveReverseLeft();
+    void moveForwardRight();
 
-    /****************************************************************************************
-     * void MoveReverseRight()
-     * 
-     * Sets the Right wheels to reverse.
-    ****************************************************************************************/
-    void MoveReverseRight();
+    void moveForward();
 
-    /****************************************************************************************
-     * void MoveForward()
-     * 
-     * Sets both left and right to move forward.
-    ****************************************************************************************/
-    void MoveForward();
+    void moveReverseLeft();
 
-    /****************************************************************************************
-     * void MoveReverse()
-     * 
-     * Sets both left and right to reverse.
-    ****************************************************************************************/
-    void MoveReverse();
+    void moveReverseRight();
 
-    /****************************************************************************************
-     * void GetSpeedRight()
-     * 
-     * Returns the current speed of the right wheels. This function wraps wheel encoders 
-     * GetMeasuredSpeedRight function.
-    ****************************************************************************************/
-    int8_t GetSpeedRight();
+    void moveReverse(); 
 
-    /****************************************************************************************
-     * void GetSpeedLeft()
-     * 
-     * Returns the current speed of the left wheels. This function wraps wheel encoders 
-     * GetMeasuredSpeedLeft function.
-    ****************************************************************************************/
-    int8_t GetSpeedLeft();
+    void turn45(bool left);
 
-    /****************************************************************************************
-     * void GetSpeed()
-     * 
-     * Returns the highest speed of GetSpeedRight and GetSpeedLeft.
-    ****************************************************************************************/
-    int8_t GetSpeed();
+    void turn90(bool left);
 
-    /****************************************************************************************
-     * void GetSpeed()
-     * 
-     * Stops vehicle and turns according to parameters. The degrees states how many degrees
-     * to turn and the boolean right decides whether to turn right or left
-    ****************************************************************************************/
-    void Turn(TurnAngle_t degrees, bool_t right);
+    void turn180(bool left);
 
-    /****************************************************************************************
-     * void MotorInit()
-     * 
-     * Function to encapsulate startup sequence for Motor library
-    ****************************************************************************************/
-    void MotorInit();
+    void CancelTurn();
 };
 
-void MotorISR();
-extern Motor Motors;
+void TurnISR();
+
+extern Motors Vehicle;
 
 #endif
