@@ -1,14 +1,9 @@
-
-#include "motor.h"
+#include "MainFsm.h"
 void setup() {
-  
+    MainVehicleFsm.MainFsmInit();
+    MainVehicleFsm.MainFsmStart();
+
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
-
 }
-
-
-
-

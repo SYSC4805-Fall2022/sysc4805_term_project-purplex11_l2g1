@@ -1,207 +1,83 @@
-/****************************************************************************************
- * Filename: motor.h
- * Author: Justin Whalley
- * Description: Module containing all motor commands and settings
-****************************************************************************************/
-
 #ifndef MOTOR_H
 #define MOTOR_H
 
-#include "common.h"
+#include <stdint.h>
+#include "arduino.h"
+#include <DueTimer.h>
 
-/****************************************************************************************
- * Definitions
-****************************************************************************************/
+#define LEFT_MOTOR_FORWARD_PIN_STATE    0
+#define RIGHT_MOTOR_FORWARD_PIN_STATE   1
+#define LEFT_MOTOR_REVERSE_PIN_STATE    1
+#define RIGHT_MOTOR_REVERSE_PIN_STATE   0
 
-#define MIN_ACCELERATION                    -5
-#define MAX_ACCELERATION                    5
-#define MIN_VELOCITY                        0
-#define MAX_VELOCITY                        25
-#define MIN_TURN_ANGLE                      -180
-#define MAX_TURN_ANGLE                      180
-#define ACCEPTABLE_SPEED_RANGE              3
-#define ACCELERATION_TIMER_MS               50
-#define CORRECTION_ACCELERATION             1
+#define LEFT_MOTOR_DIR_PIN              22
+#define RIGHT_MOTOR_DIR_PIN             23
 
-#define FORWARD_MOTOR_PIN_STATE             1
-#define REVERSE_MOTOR_PIN_STATE             0
+#define PWM_DUTY_MOVING                 2500
+#define TC_DUTY_MOVING                  105000
+#define PWM_STOP                        1
+#define TC_STOP                         1                     
 
-#define GET_MOTOR_STATE()                   (Motor.state)
-#define SET_MOTOR_STATE(X)                  (Motor.state = X)
-#define GET_TARGET_MOTOR_STATE()            (Motor.targetState)
-#define SET_TARGET_MOTOR_STATE(X)           (Motor.targetState = X)
+#define TURN_45_TIME_MS                 1500
+#define TURN_90_TIME_MS                 3000
+#define TURN_180_TIME_MS                6000
 
-#define SET_MOTOR_VELOCITY(X)               (Motor.velocity = X)
-#define GET_MOTOR_VELOCITY()                (Motor.velocity)
-#define SET_MOTOR_TARGET_VELOCITY(X)        (Motor.targetVelocity = X)
-#define GET_MOTOR_TARGET_VELOCITY()         (Motor.targetVelocity)
-
-#define GET_MOTOR_ACCELERATION()            (Motor.acceleration)
-#define SET_MOTOR_ACCELERATION(X)           (Motor.acceleration = X)
-
-#define GET_LEFT_MOTOR_SPEED()              (MotorEncoder.leftMotorSpeed)
-#define GET_RIGHT_MOTOR_SPEED()             (MotorEncoder.rightMotorSpeed)
-
-#define GET_INTERNAL_MOTOR_STATE()          (InternalMotor.MotorState)
-#define SET_INTERNAL_MOTOR_STATE(X)         (InternalMotor.MotorState = X)
-
-#define GET_INCREMENT_FROM_ACCELERATION(X)  (((X - 0.9462) / 0.2632) / (1 / (ACCELERATION_TIMER_MS / 1000)) * 1000) // keep 3 decimal points
 /*
-    Duty cycle (%) -> speed (cm/s)
-
-    0   -> 0
-    20  -> 4.6
-    40  -> 14.08
-    60  -> 18.65
-    80  -> 21.55
-    100 -> 25.77
-
-    speed(cm/s) = 0.2632*(duty_cycle(%)) + 0.9462    <- R^2 = 0.9673
-
-    Increment = ((acceleration (cm/s^2) - 0.9462) / 0.2632) / (1 / (ACCELERATION_TIMER_MS*e-3))
+LEFT_MOTOR_EN       2
+RIGHT_MOTOR_EN      35
 */
 
-/****************************************************************************************
- * Enums
-****************************************************************************************/
+typedef enum {
+    STOPPED = 0,
+    FORWARD = 1,
+    REVERSE = 2,
+    TURNING = 3
+} State_t;
 
 typedef enum {
-    STOPPED      = 0,
-    FORWARD      = 1,
-    REVERSE      = 2,
-    ACCELERATING = 3,
-    DECELERATING = 4
+    MOTOR_STOPPED = 0,
+    MOTOR_FORWARD = 1,
+    MOTOR_REVERSE = 2
 } MotorState_t;
 
-typedef enum {
-    DEGREE_0   = 0,
-    DEGREE_5   = 1,
-    DEGREE_25  = 5,
-    DEGREE_45  = 9,
-    DEGREE_90  = 18,
-    DEGREE_180 = 36,
-} TurnAngle_t;
+class Motors {
+public:
+    State_t state;
+    MotorState_t leftMotorState;
+    MotorState_t rightMotorState;
 
-/****************************************************************************************
- * Structs
-****************************************************************************************/
+    friend void digitalWrite(uint32_t uPin, uint32_t uVal);
+    friend void pinMode(uint32_t ulPin, uint32_t ulMode);
 
-typedef struct 
-{
-    MotorState_t MotorState;
-} InternalMotor_t;
+    void motorInit();
 
+    void stop();
 
-typedef struct 
-{
-    MotorState_t state;
-    MotorState_t targetState;
-    uint8_t      velocity;
-    uint8_t      targetVelocity;
-    int8_t       acceleration;
-} Motor_t;
+    State_t getState();
 
-typedef struct 
-{
-    uint8_t  targetVelocity;
-    bool_t   isTurning;
-    int8_t   acceleration;
-    uint16_t dutyCycleIncrement;
-    uint8_t  turnTicks;
-    uint8_t  turnTickCounter;
-    bool_t   turnRight;
-    uint8_t  leftTickCounter;
-    uint8_t  rightTickCounter;
-} MotorCtl_t;
+    void moveForwardLeft();
 
-typedef struct
-{
-    uint8_t     leftMotorSpeed;
-    uint8_t     rightMotorSpeed;
-} MotorEncoder_t;
+    void moveForwardRight();
 
-extern Motor_t Motor;
-extern MotorCtl_t MotorCtl;
-extern MotorEncoder_t MotorEncoder;
-extern InternalMotor_t InternalMotor;
+    void moveForward();
 
-/****************************************************************************************
- * Methods
-****************************************************************************************/
+    void moveReverseLeft();
 
-/****************************************************************************************
- * MotorInit()
- * 
- * Function to run during the boot up process which will set all default variables.
-****************************************************************************************/
-void MotorInit();
+    void moveReverseRight();
 
-/****************************************************************************************
- * SetMotorSpeed(uint8_t velocity)
- * 
- * Function to set the current motor speed, if velocity parameter is greater than the 
- * maximum limit, speed will be set to the maximum. If the velocity parameter is less than
- * the minimum limit, the velocity will be set to the minimum.If current speed is greater 
- * than set motor speed, the vehicle will begin to deccelerate until the set motor speed 
- * with a decceleration of abs(Motor.Acceleration)
-****************************************************************************************/
-void SetMotorSpeed(uint8_t velocity);
+    void moveReverse(); 
 
-/****************************************************************************************
- * GetMotorSpeed()
- * 
- * Function to get the current motor speed. 
-****************************************************************************************/
-uint8_t GetMotorSpeed();
+    void turn45(bool left);
 
-/****************************************************************************************
- * SetMotorState(MotorState_t state)
- * 
- * Function to set the current motor state. If state parameter is not of type MotorState_t
- * the state will remain unchanged. If motor state is set to STOPPED, the vehicle will 
- * begin decclerating with an acceleration of MIN_ACCELERATION. If the motor is in reverse
- * and state is FORWARD, the vehicle will deccelerate with an acceleration of 
- * -abs(Motor.acceleration) to a speed of 0 and then accelerate with an acceleration of 
- * abs(Motor.acceleration) until Motor.velocity is reached.
-****************************************************************************************/
-void SetMotorState(MotorState_t state);
+    void turn90(bool left);
 
-/****************************************************************************************
- * GetMotorState()
- * 
- * Function to get the current motor state.
-****************************************************************************************/
-MotorState_t GetMotorState();
+    void turn180(bool left);
 
-/****************************************************************************************
- * SetMotorAcceleration(int8_t acceleration)
- * 
- * Function to set the current motor acceleration, if acceleration parameter is greater 
- * than the maximum limit, acceleration will be set to the maximum. If the acceleration 
- * parameter is less than the minimum limit, the acceleration will be set to the minimum.
- * Once set, the vehicle will begin accelerating up to the maximum velocity if acceleration
- * is positive or decelerating to minimum velocity if negative. 
-****************************************************************************************/
-void SetMotorAcceleration(int8_t acceleration);
+    void CancelTurn();
+};
 
-/****************************************************************************************
- * GetMotorAcceleration()
- * 
- * Function to get the current motor acceleration.
-****************************************************************************************/
-int8_t GetMotorAcceleration();
+void TurnISR();
 
-/****************************************************************************************
- * Turn(TurnAngle_t turnAngle)
- * 
- * Function to turn the vehicle turnAngle degrees.
-****************************************************************************************/
-void Turn(TurnAngle_t turnAngle, bool_t turnRight);
+extern Motors Vehicle;
 
-/****************************************************************************************
- * MotorISR()
- * 
- * Function to handle all timed instructions.
-****************************************************************************************/
-void MotorISR();
 #endif
