@@ -3,14 +3,20 @@
 Motors Vehicle;
 
 void Motors::motorInit() {
+    /* Initialize the state to stopped */
     state = STOPPED;
 
+    /* Initialize the pinmodes for the direction pins */
     pinMode(LEFT_MOTOR_DIR_PIN, OUTPUT);
     pinMode(RIGHT_MOTOR_DIR_PIN, OUTPUT);
 
+    /* Start the vehicle in forward pin state with velocity of 0 */
     digitalWrite(LEFT_MOTOR_DIR_PIN, LEFT_MOTOR_FORWARD_PIN_STATE);
     digitalWrite(RIGHT_MOTOR_DIR_PIN, RIGHT_MOTOR_FORWARD_PIN_STATE);
 
+    /* Initialize both a Timer counter and a pwm 
+     * signal to 100Hz for the left and right sides
+     * of vehicle */
     PMC->PMC_PCER0 |= PMC_PCER0_PID27;
     PIOB->PIO_PDR |= PIO_PDR_P25; 
     PIOB->PIO_ABSR |= PIO_PB25B_TIOA0;
@@ -20,24 +26,26 @@ void Motors::motorInit() {
                                 | TC_CMR_ACPA_CLEAR 
                                 | TC_CMR_ACPC_SET; 
     TC0->TC_CHANNEL[0].TC_RC = ( 42000000 / 100) -1; 
-    TC0->TC_CHANNEL[0].TC_RA = (42000000 / 100) * 0.25; 
+    TC0->TC_CHANNEL[0].TC_RA = (42000000 / 100) * 0.01; 
     TC0->TC_CHANNEL[0].TC_CCR = TC_CCR_SWTRG 
                                 | TC_CCR_CLKEN;
                                 
-    PMC->PMC_PCER1 |= PMC_PCER1_PID36; // Enable Clock to PWM module
-    PIOC->PIO_ABSR |= PIO_PC3B_PWMH0; // Assign C3 to PWM module (Periph_B)
-    PIOC->PIO_PDR |= PIO_PDR_P3; // Release C3 from the PIO module
-    REG_PWM_CLK = PWM_CLK_PREA(0) | PWM_CLK_DIVA(84);//Set PWM clock 1MHz (Mck/84)
-    PWM->PWM_CH_NUM[0].PWM_CMR |= PWM_CMR_CPRE_CLKA // Set the clock source as CLKA
-    | PWM_CMR_CPOL; //Set output polarity be high.
+    PMC->PMC_PCER1 |= PMC_PCER1_PID36; 
+    PIOC->PIO_ABSR |= PIO_PC3B_PWMH0; 
+    PIOC->PIO_PDR |= PIO_PDR_P3; 
+    REG_PWM_CLK = PWM_CLK_PREA(0) | PWM_CLK_DIVA(84);
+    PWM->PWM_CH_NUM[0].PWM_CMR |= PWM_CMR_CPRE_CLKA 
+    | PWM_CMR_CPOL; 
     PWM->PWM_CH_NUM[0].PWM_CPRD = ( 1000000 / 100) -1; 
-    PWM->PWM_CH_NUM[0].PWM_CDTY = ( 1000000 / 100)* 0.25; // Set PWM duty cycle
-    PWM->PWM_ENA = PWM_ENA_CHID0; // Enable the PWM channel
+    PWM->PWM_CH_NUM[0].PWM_CDTY = ( 1000000 / 100)* 0.01; 
+    PWM->PWM_ENA = PWM_ENA_CHID0; 
 
+    /* Ensure the vehicle is stopped before exiting the init function*/
     stop();
 }
 
 void Motors::stop() {
+    /* Stop both motors */
     if (rightMotorState != STOPPED) {
         PWM->PWM_CH_NUM[0].PWM_CDTY = PWM_STOP;
     }
@@ -53,11 +61,14 @@ void Motors::stop() {
 
 
 State_t Motors::getState() {
+    /* Returns the overal state of the vehicle */
     return state;
 }
 
 
 void Motors::moveForwardLeft() {
+    /* If the left motors are not already moving forward, 
+     * begin forward motion */
     if (leftMotorState != MOTOR_FORWARD) {
         digitalWrite(LEFT_MOTOR_DIR_PIN, LEFT_MOTOR_FORWARD_PIN_STATE);
         TC0->TC_CHANNEL[0].TC_RA = TC_DUTY_MOVING;
@@ -70,8 +81,9 @@ void Motors::moveForwardLeft() {
     
 }
 
-
 void Motors::moveForwardRight() {
+    /* If the right motors are not already moving forward, 
+     * begin forward motion */
     if (rightMotorState != MOTOR_FORWARD) {
         digitalWrite(RIGHT_MOTOR_DIR_PIN, RIGHT_MOTOR_FORWARD_PIN_STATE);
         PWM->PWM_CH_NUM[0].PWM_CDTY = PWM_DUTY_MOVING;
@@ -84,12 +96,15 @@ void Motors::moveForwardRight() {
 
 
 void Motors::moveForward() {
+    /* begin forward movement on both left and right motors */
     moveForwardLeft();
     moveForwardRight();
 }
 
 
 void Motors::moveReverseLeft() {
+    /* If the left motors are not already moving reverse, 
+     * begin reverse motion */
     if (leftMotorState != MOTOR_REVERSE) {
         digitalWrite(LEFT_MOTOR_DIR_PIN, LEFT_MOTOR_REVERSE_PIN_STATE);
         TC0->TC_CHANNEL[0].TC_RA = TC_DUTY_MOVING;
@@ -102,6 +117,8 @@ void Motors::moveReverseLeft() {
 
 
 void Motors::moveReverseRight() {
+    /* If the right motors are not already moving reverse, 
+     * begin reverse motion */
     if (rightMotorState != MOTOR_REVERSE) {
         digitalWrite(RIGHT_MOTOR_DIR_PIN, RIGHT_MOTOR_REVERSE_PIN_STATE);
         PWM->PWM_CH_NUM[0].PWM_CDTY = PWM_DUTY_MOVING;
@@ -114,6 +131,7 @@ void Motors::moveReverseRight() {
 
 
 void Motors::moveReverse() {
+    /* begin reverse movement on both left and right motors */
     moveReverseLeft();
     moveReverseRight();
 }

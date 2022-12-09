@@ -12,9 +12,7 @@
 #define ECHO_LEFT_PIN            26
 #define ECHO_RIGHT_PIN           27
 
-#ifndef MAX(X, Y)
 #define MAX(X, Y)                (X > Y ? X : Y)
-#endif
 
 typedef enum {
     NO_WARNING      = 0,
@@ -27,13 +25,51 @@ public:
     WarningState_t leftSensorState;
     WarningState_t rightSensorState;
 
+    /**************************************************
+     * Methods from arduino.h that are used within the 
+     * class
+    **************************************************/
     friend void digitalWrite(uint32_t uPin, uint32_t uVal);
     friend void pinMode(uint32_t ulPin, uint32_t ulMode);
 
+    /**************************************************
+     * void UltrasonicSensorInit()
+     * 
+     * Method to handle the startup of the ultrasonic sensor.
+     * This method will only be called once before any code 
+     * is run.
+    **************************************************/
     void UltrasonicSensorInit();
 
+    /**************************************************
+     * WarningState_t pollLeftSensor()
+     * 
+     * Method to poll the left ultrasonic sensor. If 
+     * obstacle less than MIN_TRIGGER_DISTANCE_CM, return
+     * TRIGGER HANDLER. IF obstacle in range MIN_TRIGGER_DISTANCE_CM
+     * to WARNING_DISTANCE_CM, return WARNING. Otherwise 
+     * return NO WARNING
+    **************************************************/
     WarningState_t pollLeftSensor();
+
+    /**************************************************
+     * WarningState_t pollRightSensor()
+     * 
+     * Method to poll the right ultrasonic sensor. If 
+     * obstacle less than MIN_TRIGGER_DISTANCE_CM, return
+     * TRIGGER HANDLER. IF obstacle in range MIN_TRIGGER_DISTANCE_CM
+     * to WARNING_DISTANCE_CM, return WARNING. Otherwise 
+     * return NO WARNING
+    **************************************************/
     WarningState_t pollRightSensor();
+
+    /**************************************************
+     * WarningState_t pollSensors()
+     * 
+     * Method to poll the both left and right sensors
+     * and return the maximum warning/error level of 
+     * the two.
+    **************************************************/
     WarningState_t pollSensors();
 };
 

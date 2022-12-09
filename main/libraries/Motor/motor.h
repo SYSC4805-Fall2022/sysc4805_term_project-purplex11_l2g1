@@ -18,9 +18,9 @@
 #define PWM_STOP                        1
 #define TC_STOP                         1                     
 
-#define TURN_45_TIME_MS                 3000
-#define TURN_90_TIME_MS                 6000
-#define TURN_180_TIME_MS                12000
+#define TURN_45_TIME_MS                 1500
+#define TURN_90_TIME_MS                 3000
+#define TURN_180_TIME_MS                6000
 
 /*
 LEFT_MOTOR_EN       2

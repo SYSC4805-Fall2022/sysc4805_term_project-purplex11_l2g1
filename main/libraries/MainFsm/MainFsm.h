@@ -4,19 +4,18 @@
 #include "lineFollower.h"
 #include "motor.h"
 #include "ultrasonicSensor.h"
-#include "miniMu.h"
 #include <stdint.h>
 #include "arduino.h"
 
-#define DEFAULT_TICK_TIME_MS              50
+#define DEFAULT_TICK_TIME_MS              25
 #define WARNING_TICK_TIME_MS              10
 
-#define OBSTACLE_REVERSE_TIME_S           3
-#define LINE_REVERSE_TIME_S               1
+#define OBSTACLE_REVERSE_TIME_S           2
+#define LINE_REVERSE_TIME_S               2
 
 #define GET_RANDOM_BOOL()                 (rand()%2)
 
-#define RANDOM_WALK_CHANGE_DIR_TIME_S     5
+#define RANDOM_WALK_CHANGE_DIR_TIME_S     15
 
 typedef enum {
     INIT_STATE          = 0,
@@ -57,25 +56,75 @@ public:
     uint16_t                tickTime;
     long                    reverseStartTime;
     long                    fsmStartTime;
+    bool                    turnDir;
 
+    /**************************************************
+     * void MainFsmInit()
+     * 
+     * Method to handle the startup of the fsm. This 
+     * method will only be called once before any code 
+     * is run.
+    **************************************************/
     void MainFsmInit();
 
+    /**************************************************
+     * void MainFsmStart()
+     * 
+     * Method to start the timer to begin the fsm.
+    **************************************************/
     void MainFsmStart();
 
-    void MainFsmTick();
-
-    void MainFsm();
-
+    /**************************************************
+     * void ObstacleState()
+     * 
+     * Method to handle the obstacle detect state and 
+     * is called on every MainFsmTick where the 
+     * mainFsmState is equal to OBSTACLE_STATE.
+    **************************************************/
     void ObstacleState();
 
+    /**************************************************
+     * void LineState()
+     * 
+     * Method to handle the line detect state and 
+     * is called on every MainFsmTick where the 
+     * mainFsmState is equal to LINE_STATE.
+    **************************************************/
     void LineState();
 
+    /**************************************************
+     * void RandomWalkState()
+     * 
+     * Method to handle the random walk state and 
+     * is called on every MainFsmTick where the 
+     * mainFsmState is equal to RANDOM_WALK_STATE. 
+     * In random walk state, the vehicle will randomly
+     * choose between 45 degrees left, 45 degrees right,
+     * 90 degrees left, and 90 degrees right.
+    **************************************************/
     void RandomWalkState();
 
+    /**************************************************
+     * void StateCheck()
+     * 
+     * Method to handle to poll the line detector, the
+     * distance sensors and check the time since last 
+     * turn to potentially trigger random walk. The 
+     * handling priority is line, obstacle, random walk.
+    **************************************************/
     void StateCheck();
 };
 
+/**************************************************
+ * void MainFsmTick()
+ * 
+ * Method to handle the a main fsm timer tick where
+ * it will call the respective state handlers.
+**************************************************/
+void MainFsmTick();
+
 extern VehicleFsm MainVehicleFsm;
+
 
 
 #endif
